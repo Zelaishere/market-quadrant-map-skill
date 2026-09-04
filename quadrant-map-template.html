@@ -1,0 +1,751 @@
+<!--
+  參考範例：這是 market-quadrant-map skill 實際產出過的一份完整成品（PSU／電源供應器市場定位圖）。
+  這份檔案不是「填空模板」（沒有 {{TOKEN}} 佔位符），而是一份真的跑過完整流程、可直接參考的成品。
+  重新產一個新類別時，直接複製這個檔案，然後對照每個標了 EDIT-PER-CATEGORY 的地方，
+  依新類別的研究結果重寫該處文字／資料；CSS、SVG 座標換算、chip 互動邏輯、下載按鈕邏輯都可以照抄，
+  除非新類別需要不同的配色主題或版面調整。
+  唯一一定要整段替換的是 <script> 內的 `const PRODUCTS = [...]`（換成新類別蒐集到的真實資料）。
+-->
+<!-- EDIT-PER-CATEGORY: 瀏覽器分頁標題，格式「{類別} 市場定位圖」 -->
+<title>PSU 市場定位圖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --surface:        #faf7f1;
+    --surface-card:   #ffffff;
+    --surface-plot:   #fffdf9;
+    --ink-primary:    #201b12;
+    --ink-secondary:  #5c5346;
+    --ink-muted:      #8d8371;
+    --border:         rgba(32,27,18,0.13);
+    --border-strong:  rgba(32,27,18,0.24);
+    --grid-line:      #e9e2d3;
+    --axis-line:      #c7bca4;
+    --band-entry:     rgba(201,147,42,0.08);
+    --band-mid:       rgba(201,147,42,0.15);
+    --band-high:      rgba(201,147,42,0.24);
+    --dot-entry:      #b98a24;
+    --dot-mid:        #a06d15;
+    --dot-high:       #7d4e0d;
+    --chip-bg:        #ffffff;
+    --chip-border:    rgba(32,27,18,0.16);
+    --chip-shadow:    0 1px 2px rgba(32,27,18,0.08);
+    --accent:         #a06d15;
+    --link:           #8a5a12;
+    --tooltip-bg:     #201b12;
+    --tooltip-ink:    #faf7f1;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --surface:        #16130d;
+      --surface-card:   #201b13;
+      --surface-plot:   #1c170f;
+      --ink-primary:    #f6f1e6;
+      --ink-secondary:  #cabfa9;
+      --ink-muted:      #8f8571;
+      --border:         rgba(246,241,230,0.14);
+      --border-strong:  rgba(246,241,230,0.26);
+      --grid-line:      #322a1c;
+      --axis-line:      #4a3f2a;
+      --band-entry:     rgba(232,182,79,0.06);
+      --band-mid:       rgba(232,182,79,0.12);
+      --band-high:      rgba(232,182,79,0.20);
+      --dot-entry:      #e8b64f;
+      --dot-mid:        #f0c669;
+      --dot-high:       #f5a94a;
+      --chip-bg:        #241f16;
+      --chip-border:    rgba(246,241,230,0.18);
+      --chip-shadow:    0 1px 3px rgba(0,0,0,0.4);
+      --accent:         #f0c669;
+      --link:           #f0c669;
+      --tooltip-bg:     #f6f1e6;
+      --tooltip-ink:    #16130d;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --surface:        #16130d;
+    --surface-card:   #201b13;
+    --surface-plot:   #1c170f;
+    --ink-primary:    #f6f1e6;
+    --ink-secondary:  #cabfa9;
+    --ink-muted:      #8f8571;
+    --border:         rgba(246,241,230,0.14);
+    --border-strong:  rgba(246,241,230,0.26);
+    --grid-line:      #322a1c;
+    --axis-line:      #4a3f2a;
+    --band-entry:     rgba(232,182,79,0.06);
+    --band-mid:       rgba(232,182,79,0.12);
+    --band-high:      rgba(232,182,79,0.20);
+    --dot-entry:      #e8b64f;
+    --dot-mid:        #f0c669;
+    --dot-high:       #f5a94a;
+    --chip-bg:        #241f16;
+    --chip-border:    rgba(246,241,230,0.18);
+    --chip-shadow:    0 1px 3px rgba(0,0,0,0.4);
+    --accent:         #f0c669;
+    --link:           #f0c669;
+    --tooltip-bg:     #f6f1e6;
+    --tooltip-ink:    #16130d;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--surface);
+    color:var(--ink-primary);
+    font-family:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:40px 24px 64px;}
+
+  header.page{margin-bottom:28px;}
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 10px;
+  }
+  h1{
+    font-family:"Barlow Condensed", sans-serif;
+    font-weight:700; font-size:clamp(32px,4.4vw,50px);
+    line-height:1.05; margin:0 0 12px; text-wrap:balance;
+    letter-spacing:0.01em;
+  }
+  .lede{
+    font-size:15px; line-height:1.65; color:var(--ink-secondary);
+    max-width:66ch; margin:0;
+  }
+
+  .meta-strip{
+    display:flex; flex-wrap:wrap; gap:10px;
+    margin-top:20px;
+  }
+  .meta-pill{
+    display:flex; align-items:baseline; gap:6px;
+    background:var(--surface-card); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px;
+    font-size:12.5px; color:var(--ink-secondary);
+  }
+  .meta-pill b{
+    font-family:"IBM Plex Mono", monospace;
+    color:var(--ink-primary); font-weight:600; font-size:12px;
+  }
+
+  .axis-key{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:14px;
+    margin:26px 0 20px;
+    background:var(--surface-card); border:1px solid var(--border);
+    border-radius:12px; padding:18px 20px;
+  }
+  @media (max-width:640px){ .axis-key{grid-template-columns:1fr;} }
+  .axis-key .row{display:flex; gap:10px; align-items:flex-start;}
+  .axis-key .tag{
+    font-family:"IBM Plex Mono", monospace; font-size:10.5px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--accent);
+    flex:0 0 auto; padding-top:2px;
+  }
+  .axis-key p{margin:0; font-size:13px; line-height:1.55; color:var(--ink-secondary);}
+  .axis-key strong{color:var(--ink-primary);}
+
+  .chart-card{
+    background:var(--surface-plot); border:1px solid var(--border);
+    border-radius:14px; padding:22px 22px 14px;
+    margin-bottom:18px;
+  }
+  .chart-head{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    gap:16px; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .chart-title{
+    font-family:"Barlow Condensed", sans-serif; font-weight:600;
+    font-size:19px; margin:0; letter-spacing:0.01em;
+  }
+  .tier-legend{display:flex; gap:16px; flex-wrap:wrap;}
+  .tier-legend .item{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-secondary);}
+  .tier-legend .swatch{width:10px; height:10px; border-radius:3px; flex:0 0 auto;}
+
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap;}
+  .export-btn{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:"IBM Plex Mono", monospace; font-size:11px; font-weight:500;
+    letter-spacing:0.02em; color:var(--ink-secondary);
+    background:var(--surface-card); border:1px solid var(--border-strong);
+    border-radius:7px; padding:6px 11px; cursor:pointer;
+    transition:border-color .12s ease, color .12s ease;
+  }
+  .export-btn:hover:not(:disabled){color:var(--ink-primary); border-color:var(--accent);}
+  .export-btn:disabled{opacity:0.55; cursor:progress;}
+  .export-btn svg{width:12px; height:12px; flex:0 0 auto;}
+
+  .plot-outer{position:relative; width:100%;}
+  .plot-box{
+    position:relative; width:100%;
+    aspect-ratio: 1000 / 600;
+  }
+  .plot-box svg{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .chip-layer{position:absolute; inset:0;}
+
+  .chip{
+    position:absolute; transform:translate(-50%,-50%);
+    display:flex; align-items:center; gap:5px;
+    background:var(--chip-bg); border:1px solid var(--chip-border);
+    border-radius:20px; padding:3px 8px 3px 6px;
+    box-shadow:var(--chip-shadow);
+    font-size:10.5px; line-height:1.2; white-space:nowrap;
+    color:var(--ink-primary); text-decoration:none;
+    cursor:pointer; z-index:1;
+    transition:transform .12s ease, z-index 0s, box-shadow .12s ease;
+  }
+  .chip .dot{width:7px; height:7px; border-radius:50%; flex:0 0 auto;}
+  .chip .b{font-weight:600;}
+  .chip:hover, .chip:focus-visible{
+    z-index:20; transform:translate(-50%,-50%) scale(1.28);
+    box-shadow:0 6px 18px rgba(0,0,0,0.22);
+    outline:none;
+  }
+  .chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .tip{
+    position:absolute; z-index:30; pointer-events:none;
+    background:var(--tooltip-bg); color:var(--tooltip-ink);
+    border-radius:10px; padding:11px 13px; width:230px;
+    font-size:11.5px; line-height:1.5;
+    box-shadow:0 10px 28px rgba(0,0,0,0.28);
+    opacity:0; transition:opacity .1s ease;
+  }
+  .tip.show{opacity:1;}
+  .tip .tp-brand{font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:15px; margin-bottom:1px;}
+  .tip .tp-price{font-family:"IBM Plex Mono", monospace; font-weight:600; font-size:13px; margin:4px 0 6px;}
+  .tip .tp-reason{opacity:0.86;}
+  .tip .tp-foot{margin-top:8px; padding-top:7px; border-top:1px solid rgba(255,255,255,0.18); opacity:0.8; font-size:10.5px;}
+  :root[data-theme="dark"] .tip .tp-foot, @media (prefers-color-scheme:dark){ .tip .tp-foot{border-top-color:rgba(0,0,0,0.18);} }
+
+  .band-label{
+    position:absolute; right:6px; font-family:"IBM Plex Mono", monospace;
+    font-size:10px; letter-spacing:0.06em; color:var(--ink-muted);
+    text-transform:uppercase; pointer-events:none;
+  }
+
+  .caveat{
+    font-size:12px; color:var(--ink-muted); line-height:1.6;
+    border-top:1px dashed var(--border); margin-top:10px; padding-top:12px;
+  }
+
+  .table-card{
+    background:var(--surface-card); border:1px solid var(--border);
+    border-radius:14px; padding:22px; margin-bottom:18px;
+  }
+  .table-card h2{
+    font-family:"Barlow Condensed", sans-serif; font-weight:600; font-size:19px;
+    margin:0 0 4px;
+  }
+  .table-card .sub{font-size:12.5px; color:var(--ink-muted); margin:0 0 16px;}
+  .tbl-scroll{overflow-x:auto;}
+  table{border-collapse:collapse; width:100%; min-width:760px; font-size:12.5px;}
+  thead th{
+    text-align:left; font-family:"IBM Plex Mono", monospace; font-weight:600;
+    font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-muted); padding:0 10px 8px; border-bottom:1px solid var(--border-strong);
+    white-space:nowrap; cursor:pointer; user-select:none;
+  }
+  thead th:hover{color:var(--ink-primary);}
+  thead th .arrow{opacity:0.5; margin-left:3px; font-size:9px;}
+  tbody td{padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tbody tr:hover{background:var(--band-entry);}
+  td.num{font-family:"IBM Plex Mono", monospace; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  td.brand{font-weight:600; white-space:nowrap;}
+  .tier-chip{
+    display:inline-block; padding:2px 8px; border-radius:20px;
+    font-size:10.5px; font-family:"IBM Plex Mono", monospace;
+  }
+  .tier-chip.entry{background:var(--band-entry); color:var(--dot-entry);}
+  .tier-chip.mid{background:var(--band-mid); color:var(--dot-mid);}
+  .tier-chip.high{background:var(--band-high); color:var(--dot-high);}
+  a.sale-link{color:var(--link); text-decoration:none; border-bottom:1px solid currentColor;}
+  a.sale-link:hover{opacity:0.75;}
+  td.reason{color:var(--ink-secondary); font-size:12px; max-width:280px;}
+
+  footer.page{
+    font-size:12px; color:var(--ink-muted); line-height:1.7;
+    border-top:1px solid var(--border); padding-top:18px; margin-top:8px;
+  }
+  footer.page p{margin:0 0 8px;}
+</style>
+
+<div class="wrap">
+
+  <!-- EDIT-PER-CATEGORY: 以下 header 區塊（eyebrow / h1 / lede / meta-strip 四個數字）換成新類別的品牌數、產品數、蒐集日、幣別 -->
+  <header class="page">
+    <p class="eyebrow">Market Quadrant Map · 電源供應器</p>
+    <h1>PSU 電源供應器市場定位圖</h1>
+    <p class="lede">
+      橫向掃描 18 個品牌、28 款目前在 Amazon／官網販售的 ATX 電源供應器，以「售價 × 外觀風格」畫出市場定位。
+      每個色塊代表一款產品，點擊可直接開啟該產品的實際銷售頁；完整規格與連結列於下方資料表。
+    </p>
+    <div class="meta-strip">
+      <div class="meta-pill">資料蒐集日 <b>2026-09-04</b></div>
+      <div class="meta-pill">品牌數 <b>18</b></div>
+      <div class="meta-pill">產品數 <b>28</b></div>
+      <div class="meta-pill">幣別 <b>USD</b></div>
+    </div>
+  </header>
+
+  <!-- EDIT-PER-CATEGORY: Y軸/X軸說明文字，尤其是價格門檻數字與風格光譜兩端定義，須與下方 JS 的 DOMAIN 設定一致 -->
+  <div class="axis-key">
+    <div class="row">
+      <span class="tag">Y軸</span>
+      <p><strong>售價</strong>（美元，對數座標）。座標軸依市場常見的入門／中階／高階三個價格帶分色，門檻依 PSU 市場常識設定：入門 &lt;$70、中階 $70–160、高階 &gt;$160（詳見圖下方註記）。</p>
+    </div>
+    <div class="row">
+      <span class="tag">X軸</span>
+      <p><strong>外觀風格光譜</strong>：左端「實用本位」— 純黑素面、零裝飾、只標規格；右端「電競電競化」— ARGB燈效、造型罩殼、發光Logo。分數為 Claude 依產品照片描述與官方文案主觀評定，理由列於每個色塊的提示框中。</p>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <!-- EDIT-PER-CATEGORY: tier-legend 三個門檻數字要跟 axis-key 說明、JS 的 DOMAIN.tierBounds 一致 -->
+    <div class="chart-head">
+      <p class="chart-title">售價 × 風格 象限分布</p>
+      <div class="tier-legend">
+        <div class="item"><span class="swatch" style="background:var(--dot-entry)"></span>入門 &lt;$70</div>
+        <div class="item"><span class="swatch" style="background:var(--dot-mid)"></span>中階 $70–160</div>
+        <div class="item"><span class="swatch" style="background:var(--dot-high)"></span>高階 &gt;$160</div>
+      </div>
+    </div>
+    <div class="toolbar" style="margin-bottom:14px;">
+      <button class="export-btn" id="btnExportPng" hidden>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 10.5V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5M8 10V2m0 8 3-3m-3 3-3-3"/></svg>
+        下載象限圖 (PNG)
+      </button>
+      <button class="export-btn" id="btnExportSpec" hidden title="版面、色彩 token、字體、座標換算公式與各點座標，可直接貼給 Figma Make 等工具重現此圖表">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 10.5V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5M8 10V2m0 8 3-3m-3 3-3-3"/></svg>
+        下載重現規格 (Markdown)
+      </button>
+    </div>
+
+    <div class="plot-outer">
+      <div class="plot-box" id="plotBox">
+        <svg id="plotSvg" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="chip-layer" id="chipLayer"></div>
+      </div>
+    </div>
+    <p class="caveat" id="caveatText"></p>
+  </div>
+
+  <div class="table-card">
+    <div class="chart-head" style="margin-bottom:4px;">
+      <div>
+        <h2>完整產品清單</h2>
+        <p class="sub">點欄名可依欄位排序；點「銷售頁」開啟該產品實際購買連結（Amazon 或品牌官網）。</p>
+      </div>
+      <div class="toolbar">
+        <button class="export-btn" id="btnExportMd" hidden>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 10.5V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2.5M8 10V2m0 8 3-3m-3 3-3-3"/></svg>
+          下載資料表 (Markdown)
+        </button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th data-key="brand">品牌 <span class="arrow"></span></th>
+            <th data-key="product">產品</th>
+            <th data-key="price">售價 <span class="arrow"></span></th>
+            <th data-key="tier">價格帶 <span class="arrow"></span></th>
+            <th data-key="style">風格分數 <span class="arrow"></span></th>
+            <th>設計判斷理由</th>
+            <th>銷售頁</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EDIT-PER-CATEGORY: 三段免責聲明都要換成新類別的蒐集日期／通路名稱／風格光譜兩端文字 -->
+  <footer class="page">
+    <p><strong>關於資料與價格：</strong>本頁售價來自 2026 年 9 月初，各產品當時可查得的 Amazon／Newegg／品牌官網現時報價，會隨庫存、通路、第三方賣家與地區而浮動；部分機種於主要通路缺貨，改採近期市場參考價（已於表格「設計判斷理由」旁或提示框中註記）。點擊色塊或表格連結前，請以該銷售頁當下顯示的價格為準。</p>
+    <p><strong>關於圖片：</strong>因目前執行環境無法將 Amazon／品牌官網的商品照片安全嵌入本頁（外部圖片主機被安全性限制擋下），色塊改以品牌名稱＋價格帶色點呈現，取代真實商品照片；商品的真實外觀請點擊銷售連結查看。</p>
+    <p><strong>關於風格評分：</strong>「實用本位 vs 電競電競化」為 Claude 依產品公開描述與外觀語彙做出的主觀判斷，僅供市場定位參考，非官方分類；如需調整光譜定義或重新評分，可直接請 Claude 更新本頁。</p>
+  </footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// EDIT-PER-CATEGORY（必改）：整段換成新類別實際蒐集到的產品陣列，欄位比照 example-products.json：
+// {id, brand, product, price, price_note, tier(entry/mid/high), style(0-100), style_reason, sales_link, link_type}
+const PRODUCTS = __PRODUCTS_JSON__;
+
+// EDIT-PER-CATEGORY：priceMin/priceMax 依新類別實際價格分布抓略寬的值域；tierBounds 是入門/中階/高階的價格門檻
+const DOMAIN = { priceMin: 40, priceMax: 1000, tierBounds: [70, 160] };
+// EDIT-PER-CATEGORY：下載檔名前綴，換成新類別的英文代稱（例如 keyboard、earbuds）
+const SLUG = 'psu';
+const BOX = { x0: 92, x1: 972, y0: 26, y1: 542, w: 1000, h: 600 };
+
+function logScaleY(price){
+  const lp = Math.log10(Math.max(price, DOMAIN.priceMin));
+  const lmin = Math.log10(DOMAIN.priceMin), lmax = Math.log10(DOMAIN.priceMax);
+  const t = (lp - lmin) / (lmax - lmin);
+  return BOX.y1 - t * (BOX.y1 - BOX.y0);
+}
+function xScale(style){
+  const t = Math.max(0, Math.min(100, style)) / 100;
+  return BOX.x0 + t * (BOX.x1 - BOX.x0);
+}
+function tierOf(price){
+  if(price < DOMAIN.tierBounds[0]) return 'entry';
+  if(price < DOMAIN.tierBounds[1]) return 'mid';
+  return 'high';
+}
+
+function buildSVG(){
+  const svg = document.getElementById('plotSvg');
+  const ns = 'http://www.w3.org/2000/svg';
+  const parts = [];
+
+  const yEntry = logScaleY(DOMAIN.tierBounds[0]);
+  const yMid   = logScaleY(DOMAIN.tierBounds[1]);
+
+  parts.push(`<rect x="${BOX.x0}" y="${yEntry}" width="${BOX.x1-BOX.x0}" height="${BOX.y1-yEntry}" fill="var(--band-entry)"/>`);
+  parts.push(`<rect x="${BOX.x0}" y="${yMid}" width="${BOX.x1-BOX.x0}" height="${yEntry-yMid}" fill="var(--band-mid)"/>`);
+  parts.push(`<rect x="${BOX.x0}" y="${BOX.y0}" width="${BOX.x1-BOX.x0}" height="${yMid-BOX.y0}" fill="var(--band-high)"/>`);
+
+  const priceTicks = [50,70,100,160,300,500,1000];
+  priceTicks.forEach(p=>{
+    const y = logScaleY(p);
+    parts.push(`<line x1="${BOX.x0}" y1="${y}" x2="${BOX.x1}" y2="${y}" stroke="var(--grid-line)" stroke-width="1"/>`);
+    parts.push(`<text x="${BOX.x0-10}" y="${y+3}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-muted)">$${p}</text>`);
+  });
+
+  [0,25,50,75,100].forEach(s=>{
+    const x = xScale(s);
+    parts.push(`<line x1="${x}" y1="${BOX.y0}" x2="${x}" y2="${BOX.y1}" stroke="var(--grid-line)" stroke-width="1"/>`);
+    parts.push(`<text x="${x}" y="${BOX.y1+18}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--ink-muted)">${s}</text>`);
+  });
+
+  parts.push(`<line x1="${BOX.x0}" y1="${BOX.y0}" x2="${BOX.x0}" y2="${BOX.y1}" stroke="var(--axis-line)" stroke-width="1.5"/>`);
+  parts.push(`<line x1="${BOX.x0}" y1="${BOX.y1}" x2="${BOX.x1}" y2="${BOX.y1}" stroke="var(--axis-line)" stroke-width="1.5"/>`);
+
+  parts.push(`<text x="${BOX.x0}" y="${BOX.y1+40}" font-family="Barlow Condensed, sans-serif" font-weight="600" font-size="13" fill="var(--ink-secondary)">← 實用本位</text>`);
+  parts.push(`<text x="${BOX.x1}" y="${BOX.y1+40}" text-anchor="end" font-family="Barlow Condensed, sans-serif" font-weight="600" font-size="13" fill="var(--ink-secondary)">電競電競化 →</text>`);
+
+  svg.innerHTML = parts.join('');
+
+  const capText = document.getElementById('caveatText');
+  const box = document.getElementById('plotBox');
+  ['入門','中階','高階'].forEach((label, i)=>{
+    const yMap = [ (yEntry+BOX.y1)/2, (yMid+yEntry)/2, (BOX.y0+yMid)/2 ];
+    const div = document.createElement('div');
+    div.className = 'band-label';
+    div.style.top = (yMap[i]/BOX.h*100) + '%';
+    div.style.transform = 'translateY(-50%)';
+    div.textContent = label;
+    box.appendChild(div);
+  });
+  capText.textContent = `Y軸為對數座標；價格帶門檻依市場常識設定為 $${DOMAIN.tierBounds[0]} 與 $${DOMAIN.tierBounds[1]}（可依實際市況調整）。`;
+}
+
+function buildChips(){
+  const layer = document.getElementById('chipLayer');
+  const tip = document.createElement('div');
+  tip.className = 'tip';
+  tip.id = 'tip';
+  document.getElementById('plotBox').appendChild(tip);
+
+  PRODUCTS.forEach(p=>{
+    const x = xScale(p.style);
+    const y = logScaleY(p.price);
+    const a = document.createElement('a');
+    a.className = 'chip';
+    a.href = p.sales_link;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.left = (x/BOX.w*100) + '%';
+    a.style.top = (y/BOX.h*100) + '%';
+    a.innerHTML = `<span class="dot" style="background:var(--dot-${p.tier})"></span><span class="b">${p.brand}</span>`;
+    a.addEventListener('mouseenter', ()=>showTip(p, a));
+    a.addEventListener('focus', ()=>showTip(p, a));
+    a.addEventListener('mouseleave', hideTip);
+    a.addEventListener('blur', hideTip);
+    a.setAttribute('tabindex','0');
+    a.setAttribute('aria-label', `${p.brand} ${p.product}，售價 $${p.price}，前往銷售頁`);
+    layer.appendChild(a);
+  });
+}
+
+function showTip(p, el){
+  const tip = document.getElementById('tip');
+  const box = document.getElementById('plotBox');
+  const priceStr = p.price >= 1000 ? p.price.toFixed(0) : (Number.isInteger(p.price) ? p.price : p.price.toFixed(2));
+  tip.innerHTML = `
+    <div class="tp-brand">${p.brand} · ${p.product}</div>
+    <div class="tp-price">$${priceStr}<span style="font-size:10px;font-weight:400;opacity:.7"> · ${tierLabel(p.tier)}｜風格 ${p.style}/100</span></div>
+    <div class="tp-reason">${p.style_reason}</div>
+    <div class="tp-foot">${p.link_type} 銷售頁${p.price_note ? ' · ' + p.price_note : ''}</div>
+  `;
+  const leftPct = parseFloat(el.style.left), topPct = parseFloat(el.style.top);
+  let left = leftPct, top = topPct + 4;
+  if(leftPct > 62) { tip.style.left = 'auto'; tip.style.right = (100-leftPct) + '%'; tip.style.transform='translate(0,6%)'; }
+  else { tip.style.right='auto'; tip.style.left = leftPct + '%'; tip.style.transform='translate(0,6%)'; }
+  tip.style.top = Math.min(topPct, 78) + '%';
+  tip.classList.add('show');
+}
+function hideTip(){ document.getElementById('tip').classList.remove('show'); }
+
+function tierLabel(t){ return t==='entry' ? '入門' : t==='mid' ? '中階' : '高階'; }
+
+let sortState = { key:'brand', dir:1 };
+function renderTable(){
+  const tbody = document.getElementById('tbody');
+  const rows = [...PRODUCTS].sort((a,b)=>{
+    let av=a[sortState.key], bv=b[sortState.key];
+    if(typeof av === 'string'){ av=av.toLowerCase(); bv=bv.toLowerCase(); }
+    if(av<bv) return -1*sortState.dir;
+    if(av>bv) return 1*sortState.dir;
+    return 0;
+  });
+  tbody.innerHTML = rows.map(p=>{
+    const priceStr = Number.isInteger(p.price) ? p.price : p.price.toFixed(2);
+    return `<tr>
+      <td class="brand">${p.brand}</td>
+      <td>${p.product}</td>
+      <td class="num">$${priceStr}</td>
+      <td><span class="tier-chip ${p.tier}">${tierLabel(p.tier)}</span></td>
+      <td class="num">${p.style}</td>
+      <td class="reason">${p.style_reason}</td>
+      <td><a class="sale-link" href="${p.sales_link}" target="_blank" rel="noopener">${p.link_type}</a></td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('#dataTable thead th[data-key]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortState.key === key) sortState.dir *= -1;
+    else { sortState.key = key; sortState.dir = 1; }
+    document.querySelectorAll('#dataTable thead .arrow').forEach(s=>s.textContent='');
+    th.querySelector('.arrow').textContent = sortState.dir===1 ? '▲' : '▼';
+    renderTable();
+  });
+});
+
+buildSVG();
+buildChips();
+renderTable();
+window.addEventListener('resize', ()=>{ document.getElementById('plotSvg').innerHTML=''; buildSVG(); });
+
+// EDIT-PER-CATEGORY：以下三個 lines.push 字串（標題／meta 統計／軸線說明）換成新類別內容
+function buildMarkdown(){
+  const sorted = [...PRODUCTS].sort((a,b)=> a.brand.localeCompare(b.brand) || a.price - b.price);
+  const lines = [];
+  lines.push('# PSU 電源供應器市場定位圖');
+  lines.push('');
+  lines.push('資料蒐集日：2026-09-04　品牌數：18　產品數：28　幣別：USD');
+  lines.push('');
+  lines.push('Y軸為售價（美元，對數座標）；X軸為外觀風格光譜，左端「實用本位」、右端「電競電競化」（0–100，Claude 依產品描述主觀評分）。價格帶門檻依 PSU 市場常識設定：入門 <$70、中階 $70–160、高階 >$160。');
+  lines.push('');
+  lines.push('| 品牌 | 產品 | 售價 | 價格帶 | 風格分數 | 設計判斷理由 | 銷售頁 |');
+  lines.push('|---|---|---|---|---|---|---|');
+  sorted.forEach(p=>{
+    const priceStr = Number.isInteger(p.price) ? p.price : p.price.toFixed(2);
+    const reasonRaw = p.style_reason + (p.price_note ? `（${p.price_note}）` : '');
+    const reason = reasonRaw.replace(/\|/g,'\\|').replace(/\n/g,' ');
+    const product = String(p.product).replace(/\|/g,'\\|');
+    lines.push(`| ${p.brand} | ${product} | $${priceStr} | ${tierLabel(p.tier)} | ${p.style} | ${reason} | [${p.link_type}](${p.sales_link}) |`);
+  });
+  lines.push('');
+  lines.push('---');
+  lines.push('售價、風格評分為 2026-09-04 蒐集之市場參考資料，實際購買請以銷售頁當下顯示內容為準。由 Claude market-quadrant-map skill 產出。');
+  return lines.join('\n');
+}
+
+// EDIT-PER-CATEGORY（選改）：只有想換配色主題時才需要改這份表，否則可直接沿用這組琥珀色主題
+const DESIGN_TOKENS = [
+  ['--surface','頁面底色','#faf7f1','#16130d'],
+  ['--surface-card','卡片底色','#ffffff','#201b13'],
+  ['--surface-plot','圖表繪圖區底色','#fffdf9','#1c170f'],
+  ['--ink-primary','主要文字','#201b12','#f6f1e6'],
+  ['--ink-secondary','次要文字','#5c5346','#cabfa9'],
+  ['--ink-muted','刻度/註腳文字','#8d8371','#8f8571'],
+  ['--border','一般邊框','rgba(32,27,18,.13)','rgba(246,241,230,.14)'],
+  ['--grid-line','格線','#e9e2d3','#322a1c'],
+  ['--axis-line','座標軸線','#c7bca4','#4a3f2a'],
+  ['--band-entry','入門色帶（最淺）','rgba(201,147,42,.08)','rgba(232,182,79,.06)'],
+  ['--band-mid','中階色帶','rgba(201,147,42,.15)','rgba(232,182,79,.12)'],
+  ['--band-high','高階色帶（最深）','rgba(201,147,42,.24)','rgba(232,182,79,.20)'],
+  ['--dot-entry','入門圓點/強調','#b98a24','#e8b64f'],
+  ['--dot-mid','中階圓點/強調','#a06d15','#f0c669'],
+  ['--dot-high','高階圓點/強調','#7d4e0d','#f5a94a'],
+  ['--accent','強調色（標題eyebrow、按鈕hover）','#a06d15','#f0c669'],
+  ['--chip-bg','色塊底色','#ffffff','#241f16'],
+  ['--tooltip-bg','提示框底色','#201b12','#f6f1e6'],
+  ['--tooltip-ink','提示框文字','#faf7f1','#16130d'],
+];
+
+function buildFigmaSpecMarkdown(){
+  const sorted = [...PRODUCTS].sort((a,b)=> a.brand.localeCompare(b.brand) || a.price - b.price);
+  const lmin = Math.log10(DOMAIN.priceMin), lmax = Math.log10(DOMAIN.priceMax);
+  const xPct = s => Math.round(s*10)/10;
+  const yPctFromTop = price => {
+    const lp = Math.log10(Math.max(price, DOMAIN.priceMin));
+    const t = (lp - lmin) / (lmax - lmin);
+    return Math.round((1-t)*1000)/10;
+  };
+
+  // EDIT-PER-CATEGORY：以下整個 buildFigmaSpecMarkdown 內，凡是提到「實用本位／電競電競化」「PSU／電源供應器」
+  // 的敘述文字都要換成新類別的風格光譜與類別名稱；Y 軸刻度、X 軸刻度數字若沿用 DOMAIN 就不用動
+  const L = [];
+  L.push('# PSU 電源供應器市場定位圖 — Figma Make 重現規格');
+  L.push('');
+  L.push('> 這份文件整理「售價 × 風格 象限分布」圖表的版面、色彩、字體與完整資料座標，可直接貼給 Figma Make 作為 prompt，或當設計交接文件使用。');
+  L.push('');
+  L.push('## 1. 圖表概念');
+  L.push('');
+  L.push('一張市場定位象限散佈圖：');
+  L.push('- **X 軸**：外觀風格光譜，0–100，左端「實用本位」（純黑素面、零裝飾）、右端「電競電競化」（ARGB燈效、造型罩殼、發光Logo）');
+  L.push(`- **Y 軸**：售價（美元），**對數座標**，值域 $${DOMAIN.priceMin}–$${DOMAIN.priceMax}`);
+  L.push(`- **背景色帶**：依售價切三層 — 入門 <$${DOMAIN.tierBounds[0]} / 中階 $${DOMAIN.tierBounds[0]}–${DOMAIN.tierBounds[1]} / 高階 >$${DOMAIN.tierBounds[1]}，由淺到深的同一色系（琥珀/銅色，隨價格帶加深，象徵定位越高階）`);
+  L.push('- **資料點**：每款產品是一顆圓角膠囊（pill/chip）— 左側一個 7px 圓點（依價格帶上色）+ 品牌名稱文字（無真實商品照片，以品牌名代替）');
+  L.push('- **互動**：hover 時色塊放大 1.28 倍、浮現深色提示卡片（品牌·產品名 / 售價·價格帶·風格分數 / 設計判斷理由 / 銷售通路），並可點擊開啟該產品實際銷售頁');
+  L.push('- 圖表下方另有一份可排序的完整資料表，作為象限圖的「文字版」備援');
+  L.push('');
+  L.push('## 2. 版面配置');
+  L.push('');
+  L.push('- 繪圖區 viewBox 比例 **1000 × 600**（Figma frame 可用同比例等比放大）');
+  L.push('- 繪圖區內縮：左邊界 92px（放 Y 軸價格刻度文字）、右邊界 28px、上邊界 26px、下邊界 58px（放 X 軸刻度與端點標籤）');
+  L.push('- Y 軸刻度（由上到下）：$1000 / $500 / $300 / $160 / $100 / $70 / $50');
+  L.push('- X 軸刻度：0 / 25 / 50 / 75 / 100，兩端加文字標籤「← 實用本位」「電競電競化 →」');
+  L.push('- 三色帶右側各自標註「高階 / 中階 / 入門」直式小標');
+  L.push('- 圖表卡片上緣：標題「售價 × 風格 象限分布」+ 右側價格帶圖例（3 個色點 + 文字）');
+  L.push('- 卡片下緣：一行灰色註記文字，說明對數座標與價格帶門檻');
+  L.push('');
+  L.push('## 3. 色彩 Design Tokens');
+  L.push('');
+  L.push('| Token | 用途 | Light | Dark |');
+  L.push('|---|---|---|---|');
+  DESIGN_TOKENS.forEach(([name,use,light,dark])=>{
+    L.push(`| \`${name}\` | ${use} | \`${light}\` | \`${dark}\` |`);
+  });
+  L.push('');
+  L.push('配色邏輯：暖色調中性色 + 單一琥珀/銅色強調，價格帶三層用同一色相的深淺（ordinal ramp）表示由淺入深＝由入門到高階，避免多色相互相搶戲。');
+  L.push('');
+  L.push('## 4. 字體 Typography');
+  L.push('');
+  L.push('| 角色 | 字體 | 字重 | 備註 |');
+  L.push('|---|---|---|---|');
+  L.push('| 標題 / 圖表標題 | **Barlow Condensed** | 600–700 | 窄體、技術規格感 |');
+  L.push('| 內文 / 說明文字 | **IBM Plex Sans** | 400–500 | body 預設字體 |');
+  L.push('| 數據 / 座標軸 / 價格 | **IBM Plex Mono** | 400–600 | 等寬數字（tabular numerals） |');
+  L.push('');
+  L.push('三個字族皆來自 Google Fonts，可在 Figma 直接套用同名字體。');
+  L.push('');
+  L.push('## 5. 資料點座標換算公式');
+  L.push('');
+  L.push('```');
+  L.push(`Y軸（售價，對數座標，值域 $${DOMAIN.priceMin}–$${DOMAIN.priceMax}）：`);
+  L.push(`y_percent_from_top = 100 × (1 − (log10(price) − log10(${DOMAIN.priceMin})) / (log10(${DOMAIN.priceMax}) − log10(${DOMAIN.priceMin})))`);
+  L.push('');
+  L.push('X軸（風格分數 0–100）：');
+  L.push('x_percent = style_score');
+  L.push('');
+  L.push(`價格帶門檻： 入門 < $${DOMAIN.tierBounds[0]}　中階 $${DOMAIN.tierBounds[0]}–${DOMAIN.tierBounds[1]}　高階 > $${DOMAIN.tierBounds[1]}`);
+  L.push('```');
+  L.push('');
+  L.push('下表已算好每款產品的 `x%` / `y%（由上而下）`，可直接作為 Figma 內色塊的絕對定位百分比。');
+  L.push('');
+  L.push(`## 6. 完整資料（${sorted.length} 款，含座標）`);
+  L.push('');
+  L.push('| 品牌 | 產品 | 售價 | 價格帶 | 風格分數 | X% | Y%(由上) | 設計判斷理由 | 銷售頁 |');
+  L.push('|---|---|---|---|---|---|---|---|---|');
+  sorted.forEach(p=>{
+    const priceStr = Number.isInteger(p.price) ? p.price : p.price.toFixed(2);
+    const reason = (p.style_reason + (p.price_note ? `（${p.price_note}）` : '')).replace(/\|/g,'\\|').replace(/\n/g,' ');
+    const product = String(p.product).replace(/\|/g,'\\|');
+    L.push(`| ${p.brand} | ${product} | $${priceStr} | ${tierLabel(p.tier)} | ${p.style} | ${xPct(p.style)} | ${yPctFromTop(p.price)} | ${reason} | [${p.link_type}](${p.sales_link}) |`);
+  });
+  L.push('');
+  L.push('## 7. 給 Figma Make 的提示詞範例');
+  L.push('');
+  L.push('可以把以下段落（連同第 6 節的資料表）整段貼給 Figma Make：');
+  L.push('');
+  L.push('> 幫我做一個市場定位象限散佈圖頁面。畫布比例 1000:600。X 軸是「風格光譜」0–100（左端標「實用本位」、右端標「電競電競化」），Y 軸是「售價」美元、對數座標、值域 $40–$1000（由下到上遞增），背景依售價切三層水平色帶（入門 <$70、中階 $70–160、高階 >$160），同一琥珀色相由淺到深。每筆資料是一個圓角膠囊色塊，內含依價格帶上色的小圓點＋品牌名稱，用第 6 節表格的 X% / Y% 座標定位。標題字體用 Barlow Condensed 700，內文用 IBM Plex Sans，數據與座標軸用 IBM Plex Mono。色彩 token 見第 3 節。互動：hover 放大並顯示提示卡片（品牌·產品、售價、價格帶、風格分數、判斷理由）。');
+  L.push('');
+  L.push('---');
+  L.push('資料蒐集日 2026-09-04；售價與風格評分為市場參考資料，實際請以各銷售頁當下顯示為準。由 Claude market-quadrant-map skill 產出。');
+  return L.join('\n');
+}
+
+async function setupDownloads(){
+  if(!window.claude || typeof window.claude.use !== 'function') return;
+  let dl = null;
+  try { dl = await window.claude.use('downloads'); } catch(e){ dl = null; }
+  if(!dl) return;
+
+  const pngBtn = document.getElementById('btnExportPng');
+  const mdBtn = document.getElementById('btnExportMd');
+  const specBtn = document.getElementById('btnExportSpec');
+  pngBtn.hidden = false;
+  mdBtn.hidden = false;
+  specBtn.hidden = false;
+
+  pngBtn.addEventListener('click', async ()=>{
+    const label = pngBtn.innerHTML;
+    pngBtn.disabled = true; pngBtn.lastChild.textContent = ' 匯出中…';
+    try{
+      const target = document.querySelector('.chart-card');
+      const bg = getComputedStyle(document.body).getPropertyValue('--surface-plot') || '#ffffff';
+      const canvas = await html2canvas(target, { backgroundColor: bg.trim(), scale: 2, useCORS: true });
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      if(!blob) throw new Error('canvas empty');
+      await dl.save({ filename: `${SLUG}-market-quadrant.png`, data: blob });
+    } catch(err){
+      if(!err || err.code !== 'declined'){
+        console.error('PNG export failed', err);
+        alert('圖片匯出失敗，請稍後再試一次。');
+      }
+    } finally {
+      pngBtn.disabled = false; pngBtn.innerHTML = label;
+    }
+  });
+
+  mdBtn.addEventListener('click', async ()=>{
+    const label = mdBtn.innerHTML;
+    mdBtn.disabled = true; mdBtn.lastChild.textContent = ' 匯出中…';
+    try{
+      const md = buildMarkdown();
+      await dl.save({ filename: `${SLUG}-market-quadrant.md`, data: md });
+    } catch(err){
+      if(!err || err.code !== 'declined'){
+        console.error('Markdown export failed', err);
+        alert('Markdown 匯出失敗，請稍後再試一次。');
+      }
+    } finally {
+      mdBtn.disabled = false; mdBtn.innerHTML = label;
+    }
+  });
+
+  specBtn.addEventListener('click', async ()=>{
+    const label = specBtn.innerHTML;
+    specBtn.disabled = true; specBtn.lastChild.textContent = ' 匯出中…';
+    try{
+      const md = buildFigmaSpecMarkdown();
+      await dl.save({ filename: `${SLUG}-quadrant-figma-spec.md`, data: md });
+    } catch(err){
+      if(!err || err.code !== 'declined'){
+        console.error('Spec export failed', err);
+        alert('規格文件匯出失敗，請稍後再試一次。');
+      }
+    } finally {
+      specBtn.disabled = false; specBtn.innerHTML = label;
+    }
+  });
+}
+setupDownloads();
+</script>
