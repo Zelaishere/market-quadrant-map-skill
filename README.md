@@ -1,8 +1,9 @@
 # market-quadrant-map
 
-一個 Claude（Cowork / Claude Code）skill：針對某個產品類別，實際搜尋市面上多個品牌的產品，
-畫成一張「售價 × 風格」的互動市場定位象限圖，發布成可分享的網頁，並可匯出資料表 Markdown、
-象限圖 PNG、Figma Make 重現規格 Markdown。
+一個 Claude（Cowork / Claude Code）skill：使用者要做特定產品類別的市場調查／競品分析，
+想把多個品牌的產品依「價格 x 風格」畫成象限圖（可點擊連到Amazon或官網銷售頁）時使用；
+特別適合產品/工業設計師初接觸一個新領域、想快速掃描市場找設計方向，或需要快速產出一張市場定位圖表的場合。
+觸發詞：市場調查、競品分析、象限圖、品牌比較圖、產品定位圖、market map、quadrant chart。
 
 ## 這個 repo 放什麼
 
